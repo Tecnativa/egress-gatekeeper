@@ -1,0 +1,42 @@
+[project]
+name = "egress-gatekeeper"
+version = "0.0.0"
+description = ""
+authors = [{ name = "Tecnativa" }]
+requires-python = ">=3.12,<4"
+dependencies = ["dnspython>=2.8.0"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "python-on-whales>=0.81.0",
+    "requests>=2.34.2",
+    "pre-commit>=4.6.1",
+    "pre-commit-uv>=4.3.0",
+    "odoorpc>=0.10.1",
+    "pytest-xdist>=3.8.0",
+]
+
+[tool.uv]
+package = false
+default-groups = "all"
+
+[tool.poetry]
+package-mode = false
+
+[tool.ruff.lint]
+extend-select = ["I"]
+ignore = ["BLE", "EXE"]
+
+[tool.pytest]
+addopts = [
+    "-ra",
+    "-s",
+    "-n",
+    "auto",
+    "--dist",
+    "loadfile",
+    "--junit-xml=test-report.xml",
+]
+testpaths = ["tests"]
+norecursedirs = ["tests/doodba_test"]

@@ -1,0 +1,151 @@
+services:
+  odoo_proxy:
+    image: ghcr.io/tecnativa/docker-whitelist:latest
+    depends_on:
+      - odoo
+      - bouncer
+    networks: &public
+      default:
+      public:
+    ports:
+      - "127.0.0.1:${PORT_PREFIX:-18}899:6899"
+      - "127.0.0.1:${PORT_PREFIX:-18}069:8069"
+      - "127.0.0.1:${PORT_PREFIX:-18}072:8072"
+    environment:
+      PORT: "6899 8069 8072"
+      TARGET: bouncer
+    healthcheck:
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+      start_interval: 1s
+
+  bouncer:
+    image: tecnativa/egress-gatekeeper:testonly
+    pull_policy: "never"
+    cap_add:
+      - NET_ADMIN
+    environment:
+      ALLOWED_HOSTS: >
+        www.tecnativa.com 1.1.1.1
+      REFRESH_INTERVAL: 300
+    networks:
+      default:
+      public:
+      # inverseproxy_shared:
+    labels:
+      traefik.enable: true
+      traefik.http.routers.main.rule: PathPrefix(`/`)
+      traefik.http.routers.main.entrypoints: web
+      traefik.backend.buffering.retryExpression: IsNetworkError() && Attempts() < 5
+      traefik.docker.network: "inverseproxy_shared"
+      traefik.frontend.passHostHeader: "true"
+      traefik.port: "8069"
+  odoo:
+    extends:
+      file: common.yml
+      service: odoo
+    build:
+      args:
+        # To aggregate in development, run the devel-setup service
+        AGGREGATE: "false"
+        # Export these variables to own files created by odoo in your filesystem
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+        # No need for this in development
+        PIP_INSTALL_ODOO: "false"
+        CLEAN: "false"
+        COMPILE: "false"
+    environment:
+      DOODBA_ENVIRONMENT: "${DOODBA_ENVIRONMENT-odoo}"
+      INITIAL_LANG: "en_US"
+      LIST_DB: "true"
+      DEBUGPY_ENABLE: "${DOODBA_DEBUGPY_ENABLE:-0}"
+      PGDATABASE: &dbname devel
+      PYDEVD_RESOLVE_SYMLINKS: 1
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONOPTIMIZE: ""
+      PYTHONPATH: /opt/odoo/custom/src/odoo
+      SMTP_PORT: "1025"
+      WDB_SOCKET_SERVER: "wdb_internal"
+      WDB_WEB_PORT: "${PORT_PREFIX:-16}984"
+      # To avoid installing demo data export DOODBA_WITHOUT_DEMO=all
+      WITHOUT_DEMO: "${DOODBA_WITHOUT_DEMO-false}"
+    volumes:
+      - ./odoo/custom:/opt/odoo/custom:ro,z
+      - ./odoo/auto:/opt/odoo/auto:rw,z
+    restart: unless-stopped
+    depends_on:
+      smtp:
+        condition: service_started
+      db:
+        condition: service_healthy
+      bouncer:
+        condition: service_healthy
+    network_mode: service:bouncer
+    command:
+      - odoo
+      - --workers=1
+      - --max-cron-threads=1
+  devel-setup:
+    profiles: ["devel-setup"]
+    extends: odoo
+    entrypoint: autoaggregate
+    network_mode: host
+    environment:
+      DEPTH_DEFAULT: 1
+      # XXX Export these variables before running setup to own the files
+      UID: "${DOODBA_GITAGGREGATE_UID:-1000}"
+      GID: "${DOODBA_GITAGGREGATE_GID:-1000}"
+      UMASK: "$DOODBA_UMASK"
+    depends_on: !override []
+    user: root
+    networks: !override
+      - public
+    volumes: !override
+      - ./odoo/custom/src:/opt/odoo/custom/src:rw,z
+  db:
+    extends:
+      file: common.yml
+      service: db
+    environment:
+      POSTGRES_PASSWORD: odoopassword
+    restart: unless-stopped
+  pgweb:
+    image: docker.io/sosedoff/pgweb
+    networks: *public
+    ports:
+      - "127.0.0.1:${PORT_PREFIX:-16}081:8081"
+    environment:
+      PGWEB_DATABASE_URL: postgres://odoo:odoopassword@db:5432/devel?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+  smtp:
+    extends:
+      file: common.yml
+      service: smtpfake
+    networks: *public
+    ports:
+      - "127.0.0.1:${PORT_PREFIX:-16}025:8025"
+
+  wdb:
+    image: docker.io/kozea/wdb
+    networks:
+      default:
+        aliases:
+          - wdb_internal
+      public:
+    ports:
+      - "127.0.0.1:${PORT_PREFIX:-16}984:1984"
+    # HACK https://github.com/Kozea/wdb/issues/136
+    init: true
+networks:
+  default:
+    internal: ${DOODBA_NETWORK_INTERNAL-true}
+  public:
+
+volumes:
+  filestore:
+  db:

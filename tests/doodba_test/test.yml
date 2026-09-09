@@ -1,0 +1,106 @@
+services:
+  traefik:
+    image: traefik:latest
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:8069
+    ports:
+      - "8069:8069"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      inverseproxy_shared:
+  bouncer:
+    image: tecnativa/egress-gatekeeper:testonly
+    pull_policy: "never"
+    depends_on:
+      - traefik
+    cap_add:
+      - NET_ADMIN
+    environment:
+      ALLOWED_HOSTS: >
+        www.tecnativa.com 1.1.1.1
+      REFRESH_INTERVAL: 300
+    networks:
+      default:
+      public:
+      # inverseproxy_shared:
+    labels:
+      traefik.enable: true
+      traefik.http.routers.main.rule: PathPrefix(`/`)
+      traefik.http.routers.main.entrypoints: web
+      traefik.backend.buffering.retryExpression: IsNetworkError() && Attempts() < 5
+      traefik.docker.network: "inverseproxy_shared"
+      traefik.frontend.passHostHeader: "true"
+      traefik.port: "8069"
+  odoo:
+    extends:
+      file: common.yml
+      service: odoo
+    environment:
+      DOODBA_ENVIRONMENT: "${DOODBA_ENVIRONMENT-test}"
+      LIST_DB: "false"
+      ODOO_BUS_PUBLIC_SAMESITE_WS: 1
+      # To install demo data export DOODBA_WITHOUT_DEMO=false
+      WITHOUT_DEMO: "${DOODBA_WITHOUT_DEMO-all}"
+      SMTP_PORT: "1025"
+      SMTP_SERVER: smtplocal
+      # Just in case you use queue_job
+      ODOO_QUEUE_JOB_CHANNELS: "root:1"
+      PGHOST: "doodba-odoo-test-db"
+    restart: unless-stopped
+    depends_on:
+      smtp:
+        condition: service_started
+      db:
+        condition: service_healthy
+      bouncer:
+        condition: service_healthy
+    network_mode: service:bouncer
+    command:
+      - odoo
+      - --workers=3
+      - --max-cron-threads=1
+
+  db:
+    extends:
+      file: common.yml
+      service: db
+    environment:
+      POSTGRES_PASSWORD: odoopassword
+    networks:
+      default:
+        aliases:
+          - "doodba-odoo-test-db"
+    restart: unless-stopped
+
+  smtp:
+    extends:
+      file: common.yml
+      service: smtpfake
+    image: docker.io/mailhog/mailhog
+    restart: unless-stopped
+    networks:
+      default:
+        aliases:
+          - smtplocal
+    labels:
+      doodba.domain.main: ""
+    volumes:
+      - "smtpconf:/etc/mailhog:ro"
+    entrypoint: [sh, -c]
+    command:
+      - test -r /etc/mailhog/auth && export MH_AUTH_FILE=/etc/mailhog/auth; exec MailHog
+networks:
+  default:
+    internal: ${DOODBA_NETWORK_INTERNAL-true}
+    driver_opts:
+      encrypted: 1
+  public:
+  inverseproxy_shared:
+
+volumes:
+  filestore:
+  db:
+  smtpconf:
