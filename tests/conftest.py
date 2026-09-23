@@ -87,7 +87,7 @@ class ComposeCommon:
     def pre_start(cls, docker_client: DockerClient, project):
         docker_client.compose.down(remove_orphans=True, volumes=True)
         docker_client.compose.pull(quiet=True, ignore_pull_failures=True)
-        docker_client.compose.build(quiet=True)
+        docker_client.compose.build(quiet=True, pull=True)
 
     @pytest.fixture(scope="class")
     @classmethod
