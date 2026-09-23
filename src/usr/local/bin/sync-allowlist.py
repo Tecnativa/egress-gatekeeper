@@ -13,8 +13,13 @@ logging.basicConfig(
 
 logger = logging.getLogger("gateway")
 INTERVAL = int(os.getenv("REFRESH_INTERVAL", "60"))
+raw_hosts = [
+    host
+    for key, value in os.environ.items()
+    if key.startswith("ALLOWED_HOSTS")
+    for host in value.split()
+]
 
-raw_hosts = [x.strip() for x in os.getenv("ALLOWED_HOSTS", "").split() if x.strip()]
 
 logger.info(f"Allowing connection to {raw_hosts}")
 enable_ipv4 = os.environ.get("ENABLE_IPV4", "1") in {"true", "1", "yes", "on"}
