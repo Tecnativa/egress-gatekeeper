@@ -126,6 +126,16 @@ jobs:
       #     cache-from: *cache-from
       #     outputs: |
       #       type=image,name=docker.io/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true
+      - &ghcr-meta
+        name: Docker meta ghcr.io
+        id: docker_meta_ghcr
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: |
+            ghcr.io/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=pr,prefix=pr-
+            type=raw,value=latest,enable=${{ github.event_name != 'pull_request' }}
       - name: Build and push image (ghcr.io)
         id: push-ghcr
         uses: *build-push-action
@@ -137,6 +147,7 @@ jobs:
           cache-from: *cache-from
           outputs: |
             type=image,name=ghcr.io/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true
+          labels: ${{ steps.docker_meta_ghcr.outputs.labels }}
       - name: Export digest
         run: |
           mkdir -p /tmp/digests
@@ -170,16 +181,7 @@ jobs:
           merge-multiple: true
       - *setup-buildx
       - *ghcr-login
-      - &ghcr-meta
-        name: Docker meta ghcr.io
-        id: docker_meta_ghcr
-        uses: &docker-meta-action docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        with:
-          images: |
-            ghcr.io/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=pr,prefix=pr-
-            type=raw,value=latest,enable=${{ github.event_name != 'pull_request' }}
+      - *ghcr-meta
       - &ghcr-merge-manifests
         name: Create and push multi-arch manifest (ghcr.io)
         working-directory: /tmp/digests
