@@ -4,7 +4,7 @@ import os
 import subprocess
 import time
 
-from dns.resolver import Resolver
+from dns.resolver import NXDOMAIN, NoAnswer, Resolver
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -21,15 +21,18 @@ raw_hosts = [
 ]
 
 
+def env_flag(key, default=False) -> bool:
+    raw = os.getenv(key)
+    return default if not raw else raw.lower() in {"true", "1", "yes", "on"}
+
+
 logger.info(f"Allowing connection to {raw_hosts}")
-enable_ipv4 = os.environ.get("ENABLE_IPV4", "1") in {"true", "1", "yes", "on"}
-enable_ipv6 = os.environ.get("ENABLE_IPV6", "0") in {"true", "1", "yes", "on"}
-# Resolve through the local dnsmasq (started by entrypoint.sh) so the
-# allowlist matches the answers handed out inside this network namespace.
-nameservers = os.environ.get("NAMESERVERS", "127.0.0.1").split()
+enable_ipv4 = env_flag("ENABLE_IPV4", True)
+enable_ipv6 = env_flag("ENABLE_IPV6", False)
+
 
 resolver = Resolver()
-resolver.nameservers = nameservers
+resolver.nameservers = ["127.0.0.1"]
 allowed_hosts = set()
 allowed_ipv4 = set()
 allowed_ipv6 = set()
@@ -46,10 +49,13 @@ for host in raw_hosts:
 while True:
     ipv4 = set(allowed_ipv4)
     ipv6 = set(allowed_ipv6)
-
     for host in allowed_hosts:
-        answer4 = resolver.resolve(host, "A") if enable_ipv4 else []
-        answer6 = resolver.resolve(host, "AAAA") if enable_ipv6 else []
+        try:
+            answer4 = resolver.resolve(host, "A") if enable_ipv4 else []
+            answer6 = resolver.resolve(host, "AAAA") if enable_ipv6 else []
+        except (NXDOMAIN, NoAnswer) as e:
+            logger.warning(str(e))
+            continue
         for ip in answer4:
             ipv4.add(str(ip))
         for ip in answer6:
