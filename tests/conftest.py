@@ -1,17 +1,23 @@
+from pathlib import Path
 from shutil import copytree
 
 import pytest
 from python_on_whales import DockerClient, DockerException, docker
 
 fail_hosts = [
-    "https://github.com",
-    "https://gitlab.com",
+    "github.com",
+    "8.8.8.8",
 ]
 allow_hosts = [
-    "https://www.tecnativa.com",
-    "https://1.1.1.1",
+    "www.tecnativa.com",
+    "1.1.1.1",
 ]
-param_array = [(x, False) for x in fail_hosts] + [(x, True) for x in allow_hosts]
+error_hosts = [
+    "madeupdomain.invalid",
+]
+param_array = [(x, False) for x in fail_hosts + error_hosts] + [
+    (x, True) for x in allow_hosts
+]
 
 
 def pytest_addoption(parser):
@@ -32,7 +38,7 @@ def pytest_addoption(parser):
         "--tmp",
         action="store",
         default=False,
-        help="RUn tests in /tmp isntead of project folder",
+        help="Run tests in /tmp instead of project folder",
     )
 
 
@@ -40,7 +46,7 @@ def pytest_configure():
     pytest.param_array = param_array
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(autouse=True, scope="session")
 def image(request, pytestconfig):
     """Builds image if needed."""
     image_name = request.config.getoption("--image")
@@ -68,12 +74,15 @@ class ComposeCommon:
     @pytest.fixture(scope="class")
     @classmethod
     def project(cls, tmp_path_factory, request):
-        template = request.config.rootpath / "tests" / cls._template
-        if not request.config.getoption("--tmp"):
-            return template
-        tmp_dir = tmp_path_factory.mktemp("project")
-        project = tmp_dir / cls._template
-        copytree(template, project)
+        template: Path = request.config.rootpath / "tests" / cls._template
+        project = template
+        if request.config.getoption("--tmp"):
+            tmp_dir = tmp_path_factory.mktemp("project")
+            project = tmp_dir / cls._template
+            copytree(template, project)
+        (project / ".env").write_text(
+            f"GATEKEEPER_TEST_ALLOWED_HOSTS={' '.join(allow_hosts + error_hosts)}"
+        )
         return project
 
     @pytest.fixture(scope="class")
@@ -81,6 +90,7 @@ class ComposeCommon:
     def docker_client(cls, project):
         yield DockerClient(
             compose_files=str(project / cls._compose),
+            compose_env_file=str(project / ".env"),
         )
 
     @classmethod

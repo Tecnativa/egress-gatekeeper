@@ -127,7 +127,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "odoorpc" },
     { name = "pre-commit" },
     { name = "pre-commit-uv" },
     { name = "pytest" },
@@ -141,7 +140,6 @@ requires-dist = [{ name = "dnspython", specifier = ">=2.8.0" }]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "odoorpc", specifier = ">=0.10.1" },
     { name = "pre-commit", specifier = ">=4.6.1" },
     { name = "pre-commit-uv", specifier = ">=4.3.0" },
     { name = "pytest", specifier = ">=8.4.2" },
@@ -202,15 +200,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/24/bf/d1bda4f6168e0b2e9e5958945e01910052158313224ada5ce1fb2e1113b8/nodeenv-1.10.0.tar.gz", hash = "sha256:996c191ad80897d076bdfba80a41994c2b47c68e224c542b48feba42ba00f8bb", size = 55611, upload-time = "2025-12-20T14:08:54.006Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/88/b2/d0896bdcdc8d28a7fc5717c305f1a861c26e18c05047949fb371034d98bd/nodeenv-1.10.0-py2.py3-none-any.whl", hash = "sha256:5bb13e3eed2923615535339b3c620e76779af4cb4c6a90deccc9e36b274d3827", size = 23438, upload-time = "2025-12-20T14:08:52.782Z" },
-]
-
-[[package]]
-name = "odoorpc"
-version = "0.10.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/cf/0a/9f907fbfefd2486bb4a3faab03f094f03b300b413004f348a3583ecc1898/OdooRPC-0.10.1.tar.gz", hash = "sha256:d0bc524c5b960781165575bad9c13d032d6f968c3c09276271045ddbbb483aa5", size = 58086, upload-time = "2023-08-16T09:13:42.346Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/60/8c5ea2a63151d6c1215e127909eeee3c16e792bbae92ab596dd921d6669d/OdooRPC-0.10.1-py2.py3-none-any.whl", hash = "sha256:a0900bdd5c989c414b1ef40dafccd9363f179312d9166d9486cf70c7c2f0dd44", size = 38482, upload-time = "2023-08-16T09:13:40.8Z" },
 ]
 
 [[package]]

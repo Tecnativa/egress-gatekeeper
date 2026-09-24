@@ -19,8 +19,7 @@ services:
     cap_add:
       - NET_ADMIN
     environment:
-      ALLOWED_HOSTS: >
-        www.tecnativa.com 1.1.1.1
+      ALLOWED_HOSTS: ${GATEKEEPER_TEST_ALLOWED_HOSTS}
       REFRESH_INTERVAL: 300
     networks:
       default:
