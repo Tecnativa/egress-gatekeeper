@@ -3,7 +3,7 @@ services:
     image: ghcr.io/tecnativa/docker-whitelist:latest
     depends_on:
       - odoo
-      - bouncer
+      - gatekeeper
     networks: &public
       default:
       public:
@@ -13,7 +13,7 @@ services:
       - "127.0.0.1:${PORT_PREFIX:-18}072:8072"
     environment:
       PORT: "6899 8069 8072"
-      TARGET: bouncer
+      TARGET: gatekeeper
     healthcheck:
       interval: 5s
       timeout: 5s
@@ -21,7 +21,7 @@ services:
       start_period: 10s
       start_interval: 1s
 
-  bouncer:
+  gatekeeper:
     image: tecnativa/egress-gatekeeper:testonly
     pull_policy: "never"
     cap_add:
@@ -80,9 +80,9 @@ services:
         condition: service_started
       db:
         condition: service_healthy
-      bouncer:
+      gatekeeper:
         condition: service_healthy
-    network_mode: service:bouncer
+    network_mode: service:gatekeeper
     command:
       - odoo
       - --workers=1

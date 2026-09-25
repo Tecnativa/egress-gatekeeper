@@ -11,7 +11,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       inverseproxy_shared:
-  bouncer:
+  gatekeeper:
     image: tecnativa/egress-gatekeeper:testonly
     pull_policy: "never"
     depends_on:
@@ -54,9 +54,9 @@ services:
         condition: service_started
       db:
         condition: service_healthy
-      bouncer:
+      gatekeeper:
         condition: service_healthy
-    network_mode: service:bouncer
+    network_mode: service:gatekeeper
     command:
       - odoo
       - --workers=3

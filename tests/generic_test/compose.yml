@@ -13,7 +13,7 @@ services:
       default:
       public:
 
-  bouncer:
+  gatekeeper:
     image: tecnativa/egress-gatekeeper:testonly
     pull_policy: "never"
     depends_on:
@@ -41,7 +41,7 @@ services:
       PGDATABASE: test
       PGUSER: test
       PGPASSWORD: test
-    network_mode: service:bouncer
+    network_mode: service:gatekeeper
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8081/"]
       interval: 30s
@@ -54,7 +54,7 @@ services:
         condition: service_started
       db:
         condition: service_started
-      bouncer:
+      gatekeeper:
         condition: service_healthy
   db:
     image: ghcr.io/tecnativa/postgres-autoconf:18-alpine
