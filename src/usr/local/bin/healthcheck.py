@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Healthcheck for the nftables-based whitelist gateway (bouncer).
+"""Healthcheck for the nftables-based whitelist gateway (gatekeeper).
 
 Verifies:
-1. dnsmasq is answering DNS queries on localhost.
-2. The sync-allowlist loop process is running.
-3. The inet/gateway nftables table with the output chain exists.
-4. The allowed4 set is populated (allowlist synced at least once).
+1. The sync-allowlist loop process is running.
+2. The inet/gateway nftables table with the output chain exists.
+3. The allowed4 set is populated (allowlist synced at least once).
 """
 
 import logging
@@ -29,21 +28,6 @@ def _run(cmd, check=True):
         capture_output=True,
         text=True,
     )
-
-
-def dns_healthcheck():
-    """dnsmasq must answer queries on 127.0.0.1:53."""
-    from dns.resolver import Resolver
-
-    r = Resolver()
-    r.nameservers = ["127.0.0.1"]
-    r.lifetime = float(os.environ.get("HEALTHCHECK_DNS_TIMEOUT", "2"))
-    try:
-        # ANY query to a well-known name; content does not matter,
-        # only that dnsmasq responds.
-        r.resolve("one.one.one.one", "A")
-    except Exception as e:
-        error("dnsmasq is not answering on 127.0.0.1:53", e)
 
 
 def process_healthcheck():
@@ -86,7 +70,6 @@ def main():
     if not os.environ.get("ALLOWED_HOSTS", "").strip():
         error("ALLOWED_HOSTS is empty; nothing to healthcheck")
 
-    dns_healthcheck()
     process_healthcheck()
     nftables_healthcheck()
     print("OK")

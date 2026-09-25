@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import ipaddress
 import logging
 import os
@@ -29,10 +30,11 @@ def env_flag(key, default=False) -> bool:
 logger.info(f"Allowing connection to {raw_hosts}")
 enable_ipv4 = env_flag("ENABLE_IPV4", True)
 enable_ipv6 = env_flag("ENABLE_IPV6", False)
+oneshot = env_flag("ONESHOT", False)
 
 
 resolver = Resolver()
-resolver.nameservers = ["127.0.0.1"]
+resolver.nameservers = ["127.0.0.11"]
 allowed_hosts = set()
 allowed_ipv4 = set()
 allowed_ipv6 = set()
@@ -61,59 +63,26 @@ while True:
         for ip in answer6:
             ipv4.add(str(ip))
     subprocess.run(
-        [
-            "nft",
-            "flush",
-            "set",
-            "inet",
-            "gateway",
-            "allowed4",
-        ],
+        ["nft", "flush", "set", "inet", "gateway", "allowed4"],
         check=True,
     )
 
     for ip in sorted(ipv4):
         subprocess.run(
-            [
-                "nft",
-                "add",
-                "element",
-                "inet",
-                "gateway",
-                "allowed4",
-                "{",
-                ip,
-                "}",
-            ],
+            ["nft", "add", "element", "inet", "gateway", "allowed4", "{", ip, "}"],
             check=True,
         )
 
     subprocess.run(
-        [
-            "nft",
-            "flush",
-            "set",
-            "inet",
-            "gateway",
-            "allowed6",
-        ],
+        ["nft", "flush", "set", "inet", "gateway", "allowed6"],
         check=True,
     )
 
     for ip in sorted(ipv6):
         subprocess.run(
-            [
-                "nft",
-                "add",
-                "element",
-                "inet",
-                "gateway",
-                "allowed6",
-                "{",
-                ip,
-                "}",
-            ],
+            ["nft", "add", "element", "inet", "gateway", "allowed6", "{", ip, "}"],
             check=True,
         )
-
+    if oneshot:
+        raise SystemExit(0)
     time.sleep(INTERVAL)

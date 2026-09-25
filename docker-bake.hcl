@@ -2,8 +2,8 @@ variable "IMAGE_NAME" {
   default = "tecnativa/egress-gatekeeper"
 }
 
-variable "TAG" {
- default = "testonly"
+variable "TAGS" {
+ default = ["latest","testonly"]
 }
 variable "SUFFIX" {
  default = ""
@@ -11,18 +11,23 @@ variable "SUFFIX" {
 
 group "default" {
   targets = [
-    "testing"
+    "gatekeeper"
   ]
 }
 
 variable "PLATFORMS" {
     default = ""
 }
-
-target "testing" {
-  tags = [
-    "${IMAGE_NAME}:${TAG}${SUFFIX}"
-  ]
+variable "REGISTRIES" {
+    default = ["ghcr.io","docker.io"]
+}
+target "gatekeeper" {
+  tags = flatten([
+    for registry in REGISTRIES : [
+      for tag in TAGS :
+        "${registry}/${IMAGE_NAME}:${tag}${SUFFIX}"
+    ]
+  ])
   context = "."
   dockerfile = "Dockerfile"
   platforms = split(",", PLATFORMS)

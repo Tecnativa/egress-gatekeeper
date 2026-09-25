@@ -51,8 +51,8 @@ def image(request, pytestconfig):
     """Builds image if needed."""
     image_name = request.config.getoption("--image")
     if request.config.getoption("--prebuild"):
-        return docker.build(
-            tags=image_name, context_path=pytestconfig.rootdir, load=True
+        return docker.buildx.bake(
+            files=[pytestconfig.rootdir / "docker-bake.hcl"], push=False
         )
     return docker.image.inspect(image_name)
 
