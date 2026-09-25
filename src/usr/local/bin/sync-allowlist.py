@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import ipaddress
 import logging
 import os
@@ -32,7 +33,7 @@ enable_ipv6 = env_flag("ENABLE_IPV6", False)
 
 
 resolver = Resolver()
-resolver.nameservers = ["127.0.0.1"]
+resolver.nameservers = ["127.0.0.11"]
 allowed_hosts = set()
 allowed_ipv4 = set()
 allowed_ipv6 = set()

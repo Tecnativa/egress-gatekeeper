@@ -3,7 +3,6 @@ FROM ghcr.io/astral-sh/uv:python3.12-alpine AS base
 RUN apk add --no-cache \
         curl \
         dumb-init \
-        dnsmasq \
         iproute2 \
         ipset \
         iptables \
