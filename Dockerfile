@@ -51,7 +51,7 @@ RUN chmod +x /usr/local/bin/ -R
 
 ENTRYPOINT ["dumb-init", "--", "/usr/local/bin/entrypoint.sh"]
 HEALTHCHECK \
-  --start-period=15s \
+  --start-period=30s \
   --start-interval=1s \
   --interval=30s \
   --timeout=5s \
