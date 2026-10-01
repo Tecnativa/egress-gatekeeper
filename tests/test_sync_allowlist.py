@@ -9,7 +9,7 @@ import importlib.util
 from pathlib import Path
 
 import pytest
-from dns.resolver import LifetimeTimeout, NoNameservers, NXDOMAIN
+from dns.resolver import NXDOMAIN, LifetimeTimeout, NoNameservers
 
 SCRIPT = Path(__file__).parents[1] / "src/usr/local/bin/sync-allowlist.py"
 
@@ -71,9 +71,13 @@ def test_resolve_hosts_keeps_resolving_after_a_transient_failure():
         }
     )
 
+    # A tuple, not a set, and the flaky host first on purpose: set iteration
+    # order is per-process under hash randomisation, so a set would make this
+    # test pass or fail by coin flip. With the flaky host first, a `continue`
+    # fix yields the healthy address and a `break` fix yields nothing, always.
     ipv4, _ = sync_allowlist.resolve_hosts(
         resolver,
-        {"flaky.example.com", "cdnjs.cloudflare.com"},
+        ("flaky.example.com", "cdnjs.cloudflare.com"),
         enable_ipv4=True,
         enable_ipv6=False,
     )
