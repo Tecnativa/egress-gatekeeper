@@ -5,7 +5,13 @@ import os
 import subprocess
 import time
 
-from dns.resolver import NXDOMAIN, NoAnswer, Resolver
+from dns.resolver import (
+    NXDOMAIN,
+    LifetimeTimeout,
+    NoAnswer,
+    NoNameservers,
+    Resolver,
+)
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -38,8 +44,8 @@ def resolve_hosts(resolver, hosts, enable_ipv4, enable_ipv6):
         try:
             answer4 = resolver.resolve(host, "A") if enable_ipv4 else []
             answer6 = resolver.resolve(host, "AAAA") if enable_ipv6 else []
-        except (NXDOMAIN, NoAnswer) as e:
-            logger.warning(str(e))
+        except (NXDOMAIN, NoAnswer, LifetimeTimeout, NoNameservers) as e:
+            logger.warning(f"Could not resolve {host}: {e}")
             continue
         for ip in answer4:
             ipv4.add(str(ip))
