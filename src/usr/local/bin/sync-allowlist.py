@@ -5,13 +5,7 @@ import os
 import subprocess
 import time
 
-from dns.resolver import (
-    NXDOMAIN,
-    LifetimeTimeout,
-    NoAnswer,
-    NoNameservers,
-    Resolver,
-)
+from dns.resolver import NXDOMAIN, LifetimeTimeout, NoAnswer, NoNameservers, Resolver
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
